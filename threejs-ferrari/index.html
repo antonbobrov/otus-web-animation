@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otus Web-Animation / Ferrari</title>
+</head>
+<body>
+
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        .colors {
+            position: absolute;
+            z-index: 1;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .colors__button {
+            border: 0;
+            border-radius: 0;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            background-color: var(--color);
+        }
+
+        .copyright {
+            position: absolute;
+            z-index: 1;
+            bottom: 20px;
+            left: 20px;
+            color: #fff;
+            font-family: 'Arial';
+        }
+
+        .copyright a {
+            color: #fff;
+        }
+
+    </style>
+
+    <div class="colors">
+        <button class="colors__button" style="--color: #ffffff;" aria-label="Black"></button>
+        <button class="colors__button" style="--color: #3d3d3d;" aria-label="Black"></button>
+        <button class="colors__button" style="--color: #c13c3c;" aria-label="Red"></button>
+        <button class="colors__button" style="--color: #30b859;" aria-label="Green"></button>
+    </div>
+
+    <div class="copyright">Ferrari 458 Italia by <a href="https://sketchfab.com/3d-models/ferrari-458-italia-57bf6cc56931426e87494f554df1dab6" target="_blank">vicent091036</a></div>
+
+    <script type="module">
+        import * as THREE from "https://cdn.skypack.dev/three@0.132.2";
+        import { OrbitControls } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js";
+        import { GLTFLoader } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/GLTFLoader.js";
+        import { RGBELoader } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/RGBELoader.js";
+
+        // setup
+        const scale = 150;
+        const bgColor = 0x000000;
+
+        // create scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(bgColor);
+        const envMap = new RGBELoader().load('./studio-glow.hdr');
+        scene.environment = envMap;
+        scene.environment.mapping = THREE.EquirectangularReflectionMapping;
+        scene.fog = new THREE.Fog(bgColor, 0, 3000);
+        
+        // camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 4000);
+        camera.position.z = 800;
+        camera.position.y = 150;
+
+        // renderer
+        const renderer = new THREE.WebGLRenderer({
+            alpha: false,
+            antialias: true,
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // add controls
+        new OrbitControls(camera, renderer.domElement);
+
+        // resize events
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // crete a group
+        const group = new THREE.Group();
+        scene.add(group);
+        group.scale.set(scale, scale, scale);
+        group.rotation.y = Math.PI * -0.9;
+        group.position.y = -50;
+
+        // light
+        const light = new THREE.SpotLight(0xffffff, 0.5);
+        light.position.z = 0;
+        light.position.x = 0;
+        light.position.y = 400;
+        light.penumbra = 0.5;
+        scene.add(light);
+
+        // prepare car materials
+        const bodyMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            metalness: 1.0, 
+            roughness: 0.5,
+        });
+        const glassMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff, 
+            metalness: 0.25, 
+            roughness: 0.1, 
+            transmission: 1
+        });
+        
+        // load the model
+        const loader = new GLTFLoader();
+        loader.load('./scene.glb', (gltf) => {
+            const carModel = gltf.scene.children[0];
+            group.add(carModel);
+            carModel.getObjectByName('body').material = bodyMaterial;
+            carModel.getObjectByName('glass').material = glassMaterial;
+        });
+
+        // add floor
+        const floorTex = new THREE.TextureLoader().load('./tex.jpg');
+        floorTex.wrapS = THREE.RepeatWrapping;
+        floorTex.wrapT = THREE.RepeatWrapping;
+        floorTex.repeat.set(scale, scale);
+        const floorGeometry = new THREE.PlaneGeometry(200, 200);
+        const floorMaterial = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            map: floorTex
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        group.add(floor);
+
+        // update color
+        const colorButtons = document.querySelectorAll('.colors__button');
+        colorButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const buttonColor = getComputedStyle(e.currentTarget).getPropertyValue('--color');
+                bodyMaterial.color = new THREE.Color(parseInt(buttonColor.replace('#', ''), 16));
+            })
+        });
+
+        // render the scene
+        function render () {
+            renderer.render(scene, camera);
+            window.requestAnimationFrame(render);
+        }
+        render();
+    </script>
+    
+</body>
+</html>
