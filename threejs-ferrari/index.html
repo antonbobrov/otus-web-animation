@@ -80,7 +80,7 @@
         // create scene
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(bgColor);
-        const envMap = new RGBELoader().load('studio-glow.hdr');
+        const envMap = new RGBELoader().load('/threejs-ferrari/studio-glow.hdr');
         scene.environment = envMap;
         scene.environment.mapping = THREE.EquirectangularReflectionMapping;
         scene.fog = new THREE.Fog(bgColor, 0, 3000);
@@ -139,7 +139,7 @@
         
         // load the model
         const loader = new GLTFLoader();
-        loader.load('scene.glb', (gltf) => {
+        loader.load('/threejs-ferrari/scene.glb', (gltf) => {
             const carModel = gltf.scene.children[0];
             group.add(carModel);
             carModel.getObjectByName('body').material = bodyMaterial;
@@ -147,7 +147,7 @@
         });
 
         // add floor
-        const floorTex = new THREE.TextureLoader().load('tex.jpg');
+        const floorTex = new THREE.TextureLoader().load('/threejs-ferrari/tex.jpg');
         floorTex.wrapS = THREE.RepeatWrapping;
         floorTex.wrapT = THREE.RepeatWrapping;
         floorTex.repeat.set(scale, scale);
